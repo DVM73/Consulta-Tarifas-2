@@ -294,18 +294,18 @@ const UserDashboard: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
 
             <main className="flex-1 overflow-auto p-4 custom-scrollbar">
                 <table className="w-full text-left text-sm border-separate border-spacing-0">
-                    <thead className="sticky top-0 bg-[#f3f4f6] dark:bg-slate-950 z-10 shadow-sm">
+                    <thead className="sticky top-0 z-20 shadow-sm">
                         <tr>
-                            <th className="p-3 font-bold text-slate-500 uppercase text-[10px] tracking-wider">Cód.</th>
-                            <th className="p-3 font-bold text-slate-500 uppercase text-[10px] tracking-wider">Descripción</th>
-                            {user?.rol !== 'Normal' && <th className="p-3 font-bold text-slate-500 uppercase text-[10px] tracking-wider">Coste</th>}
+                            <th className="p-3 bg-[#f3f4f6] dark:bg-slate-950 font-bold text-slate-500 uppercase text-[10px] tracking-wider border-b dark:border-slate-800">Cód.</th>
+                            <th className="p-3 bg-[#f3f4f6] dark:bg-slate-950 font-bold text-slate-500 uppercase text-[10px] tracking-wider border-b dark:border-slate-800">Descripción</th>
+                            {user?.rol !== 'Normal' && <th className="p-3 bg-[#f3f4f6] dark:bg-slate-950 font-bold text-slate-500 uppercase text-[10px] tracking-wider border-b dark:border-slate-800">Coste</th>}
                             {!isComparing ? <>
-                                <th className="p-3 font-bold text-slate-500 uppercase text-[10px] tracking-wider">PVP</th>
-                                <th className="p-3 font-bold text-slate-500 uppercase text-[10px] tracking-wider">Oferta</th>
-                                <th className="p-3 font-bold text-slate-500 uppercase text-[10px] tracking-wider">Inicio</th>
-                                <th className="p-3 font-bold text-slate-500 uppercase text-[10px] tracking-wider">Fin</th>
-                            </> : selectedCompareZones.map(z=><th key={z} className="p-3 font-bold text-slate-500 uppercase text-[10px] text-center tracking-wider">{z}</th>)}
-                            <th className="p-3 font-bold text-slate-500 uppercase text-[10px] w-1/4 tracking-wider">Nota de Supervisor</th>
+                                <th className="p-3 bg-[#f3f4f6] dark:bg-slate-950 font-bold text-slate-500 uppercase text-[10px] tracking-wider border-b dark:border-slate-800">PVP</th>
+                                <th className="p-3 bg-[#f3f4f6] dark:bg-slate-950 font-bold text-slate-500 uppercase text-[10px] tracking-wider border-b dark:border-slate-800">Oferta</th>
+                                <th className="p-3 bg-[#f3f4f6] dark:bg-slate-950 font-bold text-slate-500 uppercase text-[10px] tracking-wider border-b dark:border-slate-800">Inicio</th>
+                                <th className="p-3 bg-[#f3f4f6] dark:bg-slate-950 font-bold text-slate-500 uppercase text-[10px] tracking-wider border-b dark:border-slate-800">Fin</th>
+                            </> : selectedCompareZones.map(z=><th key={z} className="p-3 bg-[#f3f4f6] dark:bg-slate-950 font-bold text-slate-500 uppercase text-[10px] text-center tracking-wider border-b dark:border-slate-800">{z}</th>)}
+                            <th className="p-3 bg-[#f3f4f6] dark:bg-slate-950 font-bold text-slate-500 uppercase text-[10px] w-1/4 tracking-wider border-b dark:border-slate-800">Nota de Supervisor</th>
                         </tr>
                     </thead>
                     <tbody className="bg-white dark:bg-slate-900 divide-y dark:divide-slate-800">

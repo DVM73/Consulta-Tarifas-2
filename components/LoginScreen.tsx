@@ -171,11 +171,6 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, appData }) => {
           <p className="text-gray-400 text-[10px] font-medium mb-1">
             Datos: {lastUpdatedText}
           </p>
-          {(connectionStatus === 'local' || connectionStatus === 'ready') && (
-              <p className="text-brand-600/60 text-[10px] font-bold bg-brand-50 inline-block px-2 py-1 rounded">
-                Demo: admin / admin
-              </p>
-          )}
         </div>
       </div>
       <div className="fixed bottom-4 right-4 text-gray-400 dark:text-gray-600 text-[10px] font-medium pointer-events-none">
