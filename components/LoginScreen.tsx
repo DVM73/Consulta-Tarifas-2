@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { User, AppData } from '../types';
 import LockIcon from './icons/LockIcon';
@@ -90,12 +89,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, appData }) => {
             v{APP_VERSION}
           </div>
           
-          {connectionStatus === 'local' && (
-              <div className="bg-orange-50 text-orange-600 px-4 py-2 rounded-lg text-xs text-center border border-orange-100 mb-2 font-medium w-full">
-                  <strong className="block uppercase tracking-widest mb-1">⚠️ MODO LOCAL / DEMO</strong>
-                  Los cambios se guardarán solo en este navegador.
-              </div>
-          )}
+          {/* AVISO DE MODO LOCAL ELIMINADO POR SOLICITUD DE LIMPIEZA VISUAL */}
           
           {connectionStatus === 'error' && (
                <div className="bg-red-50 text-red-600 p-3 rounded-lg text-xs text-center border border-red-100 mb-2">
