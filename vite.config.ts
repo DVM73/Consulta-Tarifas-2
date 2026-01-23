@@ -34,7 +34,8 @@ export default defineConfig(({ mode }) => {
 
     // ⭐⭐⭐ AÑADIDO AQUÍ: fuerza el puerto 5174 para Taller ⭐⭐⭐
     server: {
-      port: 5174
+      port: 5174,
+      strictPort: true
     },
 
     build: {
