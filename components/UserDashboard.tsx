@@ -57,7 +57,7 @@ const NoteInput = memo(({
             onChange={e => setVal(e.target.value)}
             onBlur={handleBlur}
             onKeyDown={handleKeyDown}
-            className="w-full bg-white/50 dark:bg-black/20 p-2 rounded-lg border border-transparent focus:border-brand-300 focus:bg-white dark:focus:bg-slate-800 outline-none text-xs transition-all placeholder:text-slate-400"
+            className="w-full bg-gray-50 dark:bg-black/20 p-2 rounded-lg border border-transparent focus:border-brand-300 focus:bg-white dark:focus:bg-slate-800 outline-none text-xs transition-all placeholder:text-slate-400"
             placeholder="Añadir nota..."
         />
     );
@@ -289,21 +289,22 @@ const UserDashboard: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
 
             {isComparing && <div className="bg-white dark:bg-slate-800 p-2 flex flex-wrap gap-2 border-b dark:border-slate-700 shadow-sm z-30"><label className="flex items-center gap-2 text-sm px-2"><input type="checkbox" onChange={toggleAllZones} className="rounded text-brand-600"/> Todas las Zonas</label>{posList.map(p=><label key={p.id} className="flex items-center gap-2 text-sm px-2"><input type="checkbox" checked={selectedCompareZones.includes(p.zona)} onChange={()=>toggleZone(p.zona)} className="rounded text-brand-600"/>{p.zona}</label>)}</div>}
 
-            <main className="flex-1 overflow-auto p-4 custom-scrollbar relative">
+            {/* CORRECCIÓN ROBUSTEZ: Eliminado p-4 del main para evitar huecos en el scroll sticky */}
+            <main className="flex-1 overflow-auto bg-[#f3f4f6] dark:bg-slate-950 relative custom-scrollbar">
                 <table className="w-full text-left text-sm border-separate border-spacing-0">
-                    <thead className="sticky top-0 z-[60] shadow-sm">
+                    <thead className="sticky top-0 z-[60] shadow-md">
                         <tr>
-                            {/* Aplicamos background sólido directamente a los TH para evitar transparencias al hacer scroll */}
-                            <th className="p-3 bg-[#f3f4f6] dark:bg-slate-950 font-bold text-slate-500 uppercase text-[10px] tracking-wider border-b dark:border-slate-800 sticky top-0">Cód.</th>
-                            <th className="p-3 bg-[#f3f4f6] dark:bg-slate-950 font-bold text-slate-500 uppercase text-[10px] tracking-wider border-b dark:border-slate-800 sticky top-0">Descripción</th>
-                            {user?.rol !== 'Normal' && <th className="p-3 bg-[#f3f4f6] dark:bg-slate-950 font-bold text-slate-500 uppercase text-[10px] tracking-wider border-b dark:border-slate-800 sticky top-0">Coste</th>}
+                            {/* Aplicamos background SÓLIDO y OPACO (Blanco o Slate-900) para tapar el contenido al hacer scroll */}
+                            <th className="p-3 bg-white dark:bg-slate-900 font-bold text-slate-600 dark:text-slate-300 uppercase text-[10px] tracking-wider border-b border-gray-200 dark:border-slate-700 sticky top-0">Cód.</th>
+                            <th className="p-3 bg-white dark:bg-slate-900 font-bold text-slate-600 dark:text-slate-300 uppercase text-[10px] tracking-wider border-b border-gray-200 dark:border-slate-700 sticky top-0">Descripción</th>
+                            {user?.rol !== 'Normal' && <th className="p-3 bg-white dark:bg-slate-900 font-bold text-slate-600 dark:text-slate-300 uppercase text-[10px] tracking-wider border-b border-gray-200 dark:border-slate-700 sticky top-0">Coste</th>}
                             {!isComparing ? <>
-                                <th className="p-3 bg-[#f3f4f6] dark:bg-slate-950 font-bold text-slate-500 uppercase text-[10px] tracking-wider border-b dark:border-slate-800 sticky top-0">PVP</th>
-                                <th className="p-3 bg-[#f3f4f6] dark:bg-slate-950 font-bold text-slate-500 uppercase text-[10px] tracking-wider border-b dark:border-slate-800 sticky top-0">Oferta</th>
-                                <th className="p-3 bg-[#f3f4f6] dark:bg-slate-950 font-bold text-slate-500 uppercase text-[10px] tracking-wider border-b dark:border-slate-800 sticky top-0">Inicio</th>
-                                <th className="p-3 bg-[#f3f4f6] dark:bg-slate-950 font-bold text-slate-500 uppercase text-[10px] tracking-wider border-b dark:border-slate-800 sticky top-0">Fin</th>
-                            </> : selectedCompareZones.map(z=><th key={z} className="p-3 bg-[#f3f4f6] dark:bg-slate-950 font-bold text-slate-500 uppercase text-[10px] text-center tracking-wider border-b dark:border-slate-800 sticky top-0">{z}</th>)}
-                            <th className="p-3 bg-[#f3f4f6] dark:bg-slate-950 font-bold text-slate-500 uppercase text-[10px] w-1/4 tracking-wider border-b dark:border-slate-800 sticky top-0">Nota de Supervisor</th>
+                                <th className="p-3 bg-white dark:bg-slate-900 font-bold text-slate-600 dark:text-slate-300 uppercase text-[10px] tracking-wider border-b border-gray-200 dark:border-slate-700 sticky top-0">PVP</th>
+                                <th className="p-3 bg-white dark:bg-slate-900 font-bold text-slate-600 dark:text-slate-300 uppercase text-[10px] tracking-wider border-b border-gray-200 dark:border-slate-700 sticky top-0">Oferta</th>
+                                <th className="p-3 bg-white dark:bg-slate-900 font-bold text-slate-600 dark:text-slate-300 uppercase text-[10px] tracking-wider border-b border-gray-200 dark:border-slate-700 sticky top-0">Inicio</th>
+                                <th className="p-3 bg-white dark:bg-slate-900 font-bold text-slate-600 dark:text-slate-300 uppercase text-[10px] tracking-wider border-b border-gray-200 dark:border-slate-700 sticky top-0">Fin</th>
+                            </> : selectedCompareZones.map(z=><th key={z} className="p-3 bg-white dark:bg-slate-900 font-bold text-slate-600 dark:text-slate-300 uppercase text-[10px] text-center tracking-wider border-b border-gray-200 dark:border-slate-700 sticky top-0">{z}</th>)}
+                            <th className="p-3 bg-white dark:bg-slate-900 font-bold text-slate-600 dark:text-slate-300 uppercase text-[10px] w-1/4 tracking-wider border-b border-gray-200 dark:border-slate-700 sticky top-0">Nota de Supervisor</th>
                         </tr>
                     </thead>
                     <tbody className="bg-white dark:bg-slate-900 divide-y dark:divide-slate-800">
