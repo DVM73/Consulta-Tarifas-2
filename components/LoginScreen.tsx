@@ -47,23 +47,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, appData }) => {
       return;
     }
 
-    // Login especial para admin en caso de emergencia/fallback
-    if (username === 'admin' && password === 'admin') {
-         // Si el usuario admin existe en la BD local, usamos ese perfil, si no, uno temporal
-         const adminUser = users.find(u => u.nombre === 'admin') || {
-             id: 'admin-temp',
-             nombre: 'admin',
-             clave: 'admin',
-             zona: 'OFI',
-             grupo: 'Admin',
-             departamento: 'Supervisor',
-             rol: 'admin',
-             verPVP: true
-         };
-         onLogin(adminUser as User);
-         return;
-    }
-
+    // 1. INTENTAR LOGIN NORMAL CONTRA BASE DE DATOS (Prioridad)
     const foundUser = users.find(u => 
       String(u.nombre).trim().toLowerCase() === username.trim().toLowerCase() && 
       String(u.clave) === password
@@ -71,9 +55,28 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, appData }) => {
 
     if (foundUser) {
         onLogin(foundUser);
-    } else {
-        setError('Usuario o contraseña incorrectos');
+        return;
     }
+
+    // 2. LOGIN DE EMERGENCIA / PRIMERA VEZ
+    // Solo permitido si NO hay usuarios en la base de datos (Instalación limpia o borrado total)
+    if (users.length === 0 && username === 'admin' && password === 'admin') {
+         const tempAdminUser = {
+             id: 'admin-init',
+             nombre: 'admin',
+             clave: 'admin',
+             zona: 'OFI',
+             grupo: 'Admin',
+             departamento: 'Supervisor',
+             rol: 'admin' as const,
+             verPVP: true
+         };
+         onLogin(tempAdminUser);
+         return;
+    }
+
+    // Si llegamos aquí, fallo de autenticación
+    setError('Usuario o contraseña incorrectos');
   };
 
   return (
