@@ -42,6 +42,7 @@ export interface Articulo {
   'Ult.Pro': string;
   'Ult. Costo': string;
   IVA: string;
+  UniMed?: string; // 'P' para Pesado, 'U' para Unidad
 }
 
 export interface PointOfSale {

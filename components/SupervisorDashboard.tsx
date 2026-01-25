@@ -1,3 +1,4 @@
+
 import React, { useContext, useState, useEffect } from 'react';
 import { AppContext } from '../App';
 import UserDashboard from './UserDashboard';
@@ -56,7 +57,7 @@ const SupervisorDashboard: React.FC = () => {
   );
 
   // --- LÓGICA DE GENERACIÓN DE INVENTARIOS ---
-  const handleGenerateInventory = () => {
+  const handleGenerateInventory = async () => {
       if (selectedPosIds.length === 0) {
           alert("⚠️ Debes seleccionar al menos una tienda para generar los inventarios.");
           return;
@@ -64,14 +65,21 @@ const SupervisorDashboard: React.FC = () => {
       
       const FAMILIAS_ANEXO = ['13', '14', '19']; // Envases, Especias, Limpieza
 
-      // Iteramos para generar UN archivo por CADA tienda seleccionada
-      selectedPosIds.forEach((posId) => {
+      // CORRECCIÓN 1: BUCLE CON DELAY PARA ASEGURAR DESCARGA DE TODOS LOS ARCHIVOS
+      // Al hacer download de 11 archivos de golpe, el navegador suele bloquear los últimos.
+      // Implementamos una secuencia asíncrona.
+      let generatedCount = 0;
+
+      for (const posId of selectedPosIds) {
           const pos = data?.pos.find(p => p.id === posId);
-          if (!pos) return;
+          if (!pos) continue;
+
+          // Pequeño delay para dar respiro al hilo principal y al gestor de descargas del navegador
+          await new Promise(resolve => setTimeout(resolve, 300));
 
           const doc = new jsPDF();
           
-          // 1. OBTENER ARTÍCULOS PRINCIPALES (Con PVP en esta tienda)
+          // 1. OBTENER ARTÍCULOS PRINCIPALES
           const mainArticles = (data?.articulos || []).filter(art => {
               const tarifa = data?.tarifas.find(t => 
                   t.Tienda === pos.zona && 
@@ -80,7 +88,7 @@ const SupervisorDashboard: React.FC = () => {
               return tarifa && tarifa['P.V.P.'] && !FAMILIAS_ANEXO.includes(art.Familia);
           });
 
-          // ORDENACIÓN: 1º Sección, 2º Descripción
+          // ORDENACIÓN
           mainArticles.sort((a, b) => {
               const secA = parseInt(a.Sección) || 99;
               const secB = parseInt(b.Sección) || 99;
@@ -94,16 +102,15 @@ const SupervisorDashboard: React.FC = () => {
           );
           appendixArticles.sort((a, b) => a.Descripción.localeCompare(b.Descripción));
 
-          // --- GENERAR PÁGINA 1: CARNICERÍA/CHARCUTERÍA ---
-          generateInventoryTable(doc, pos, mainArticles, `INVENTARIO CARNICERÍA/CHARCUTERÍA - ${invMonth} ${invYear} -`);
+          // GENERACIÓN
+          generateInventoryTable(doc, pos, mainArticles, `INVENTARIO CARNICERÍA/CHARCUTERÍA - ${invMonth} ${invYear}`);
 
-          // --- GENERAR PÁGINA 2 (o siguientes): ANEXO ---
           if (appendixArticles.length > 0) {
               if (mainArticles.length > 0) doc.addPage();
-              generateInventoryTable(doc, pos, appendixArticles, `INVENTARIO ESPECIAS / ENVASES / LIMPIEZA - ${invMonth} ${invYear} -`);
+              generateInventoryTable(doc, pos, appendixArticles, `INVENTARIO ESPECIAS / ENVASES / LIMPIEZA - ${invMonth} ${invYear}`);
           }
 
-          // --- PAGINACIÓN (Página X de Y) ---
+          // PAGINACIÓN
           const pageCount = doc.getNumberOfPages();
           for (let i = 1; i <= pageCount; i++) {
               doc.setPage(i);
@@ -112,71 +119,77 @@ const SupervisorDashboard: React.FC = () => {
               doc.text(`Página ${i} de ${pageCount}`, 196, 290, { align: 'right' });
           }
 
-          // Guardar archivo individual
           doc.save(`Inventario_${pos.zona}_${invMonth}_${invYear}.pdf`);
-      });
+          generatedCount++;
+      }
 
-      alert(`✅ Se han generado ${selectedPosIds.length} archivos de inventario.`);
+      alert(`✅ Proceso finalizado. Se han enviado a descargar ${generatedCount} archivos.`);
   };
 
   const generateInventoryTable = (doc: jsPDF, pos: PointOfSale, articles: any[], title: string) => {
-        // Cabecera de la tabla que incluye el Título y los datos de la Tienda
-        // Eliminamos las columnas CT y Tienda del cuerpo para ahorrar espacio horizontal
+        // CORRECCIÓN 2: CABECERA PERFECTAMENTE ALINEADA Y PAREJA (SOLICITUD IMAGEN 1)
+        // "debe estar todo en la misma línea". Eliminamos \n y concatenamos con separadores.
+        const headerText = `${title}   -   TIENDA: ${pos.zona} (${pos.código}) - ${pos.población}`;
+
         autoTable(doc, {
-            head: [
-                [
-                    { 
-                        content: `${title}\nTIENDA: ${pos.zona} (${pos.código}) - ${pos.población}`, 
-                        colSpan: 5, 
-                        styles: { 
-                            halign: 'center', 
-                            fontSize: 10, 
-                            fontStyle: 'bold', 
-                            fillColor: [255, 255, 255], // Fondo blanco (ECO)
-                            textColor: 0, 
-                            cellPadding: 3 
-                        } 
-                    }
-                ], 
-                ['C.Art', 'Secc.', 'Descripción', 'EXISTENCIAS', 'NOTA']
-            ],
-            body: articles.map(art => [
-                art.Referencia,  // C.Art
-                art.Sección,     // Secc.
-                art.Descripción, // Descripción
-                '',              // EXISTENCIAS (Vacio)
-                ''               // NOTA (Vacio)
-            ]),
-            theme: 'grid', // Grid ahorra tinta y facilita la escritura manual
+            body: [[{ 
+                content: headerText, 
+                styles: { halign: 'center', valign: 'middle', fontSize: 10, fontStyle: 'bold' } 
+            }]],
+            theme: 'plain',
             styles: { 
-                fontSize: 8, // Fuente optimizada
-                cellPadding: 2, 
-                lineColor: [0, 0, 0], 
+                lineWidth: 0.3, 
+                lineColor: [0, 0, 0],
+                minCellHeight: 12 // Altura fija para que la cabecera se vea robusta y centrada
+            },
+            margin: { top: 10, left: 10, right: 10 },
+            pageBreak: 'avoid'
+        });
+
+        // CORRECCIÓN 3: CUERPO ROBUSTO Y PAREJO (SOLICITUD IMAGEN 2)
+        // Usamos la propiedad startY basada en la tabla anterior
+        autoTable(doc, {
+            startY: (doc as any).lastAutoTable.finalY, // Pegado a la cabecera
+            head: [['C.Art', 'Secc.', 'Descripción', 'EXISTENCIAS', 'NOTA']],
+            body: articles.map(art => [
+                art.Referencia,
+                art.Sección,
+                art.Descripción,
+                '',
+                ''
+            ]),
+            theme: 'grid',
+            styles: { 
+                fontSize: 8,
+                cellPadding: 1.5, // Padding ajustado
+                lineColor: [0, 0, 0],
                 lineWidth: 0.1,
                 textColor: [0,0,0],
-                valign: 'middle'
+                valign: 'middle', // Alineación vertical centrada perfecta
+                minCellHeight: 6 // Altura mínima de fila para homogeneidad
             },
             headStyles: { 
-                fillColor: [255, 255, 255], // Cabeceras blancas
-                textColor: [0, 0, 0], 
+                fillColor: [255, 255, 255],
+                textColor: [0, 0, 0],
                 fontStyle: 'bold',
-                lineWidth: 0.2,
+                lineWidth: 0.2, // Borde cabecera un poco más grueso
                 lineColor: [0, 0, 0],
-                halign: 'center'
+                halign: 'center',
+                valign: 'middle',
+                minCellHeight: 8
             },
             columnStyles: {
-                0: { cellWidth: 15, halign: 'center' }, // C.Art
-                1: { cellWidth: 10, halign: 'center' }, // Secc.
-                2: { cellWidth: 'auto', halign: 'left' }, // Descripción
-                3: { cellWidth: 25 },                   // Existencias
-                4: { cellWidth: 40 }                    // Nota
+                0: { cellWidth: 15, halign: 'center' },
+                1: { cellWidth: 10, halign: 'center' },
+                2: { cellWidth: 'auto', halign: 'left' },
+                3: { cellWidth: 25 },
+                4: { cellWidth: 40 }
             },
-            margin: { top: 10, left: 10, right: 10, bottom: 15 },
-            pageBreak: 'auto' 
+            margin: { left: 10, right: 10, bottom: 15 }
         });
   };
 
-  // --- LÓGICA DE GENERACIÓN DE TARIFAS ---
+  // --- LÓGICA DE GENERACIÓN DE TARIFAS (REDISEÑO COMPLETO IMAGEN 5) ---
   const handleGenerateTariff = () => {
       if (!tarPosId) {
           alert("⚠️ Selecciona una tienda válida.");
@@ -188,46 +201,23 @@ const SupervisorDashboard: React.FC = () => {
 
       try {
         const doc = new jsPDF();
-        const companyName = data?.companyName || "Paraíso de la Carne";
+        const companyName = data?.companyName || "Paraíso de la Carne Selección";
+        const fechaRev = new Date(tarRevisionDate).toLocaleDateString('es-ES');
 
-        // Colores
-        const hexToRgb = (hex: string) => {
-            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-            return result ? [parseInt(result[1], 16), parseInt(result[2], 16), parseInt(result[3], 16)] : [0, 0, 0];
-        };
-        const headerRgb = hexToRgb(tarHeaderColor);
-        const infoRgb = hexToRgb(tarMarginColor);
-
-        // Encabezado
-        doc.setFontSize(22);
-        doc.setTextColor(headerRgb[0], headerRgb[1], headerRgb[2]);
-        doc.setFont("helvetica", "bold");
-        doc.text("TARIFA DE PRECIOS", 14, 20);
-
-        doc.setFontSize(10);
-        doc.setTextColor(150);
-        doc.text(companyName, 14, 10);
-
-        doc.setFontSize(11);
-        doc.setTextColor(infoRgb[0], infoRgb[1], infoRgb[2]);
-        doc.setFont("helvetica", "bold");
-        doc.text(`TIENDA: ${selectedPos.zona} (${selectedPos.población})`, 14, 30);
+        // REQUERIMIENTO: "IMAGEN 5" -> Tabla tipo Grid con bordes.
+        // Columnas solicitadas: Mostrador, Familia, Código, Tipo (W/U -> P/U Español), Artículo, PVP
         
-        doc.setFontSize(10);
-        doc.setFont("helvetica", "normal");
-        doc.setTextColor(0);
-        doc.text(`Fecha de Revisión: ${new Date(tarRevisionDate).toLocaleDateString('es-ES')}`, 14, 36);
-
         const showPvp = tarShowPvp === 'Si';
-        const headers = showPvp ? [['REF', 'DESCRIPCIÓN', 'FAMILIA', 'PVP']] : [['REF', 'DESCRIPCIÓN', 'FAMILIA']];
+        
+        // Cabeceras exactas solicitadas (Tipo para P/U)
+        const headers = [['Mostrador', 'Familia', 'Código', 'Tipo', 'Artículo', showPvp ? 'PVP' : '']];
 
-        // Filtrar solo artículos con tarifa en esta tienda
         const rows = (data?.articulos || [])
             .filter(art => {
                 const hasTariff = data?.tarifas.some(t => 
                     t.Tienda === selectedPos.zona && 
                     String(t['Cód. Art.']).trim() === String(art.Referencia).trim() &&
-                    t['P.V.P.'] // Solo si tiene precio
+                    t['P.V.P.']
                 );
                 return hasTariff;
             })
@@ -243,47 +233,78 @@ const SupervisorDashboard: React.FC = () => {
                     if (!isNaN(num)) precioStr = num.toLocaleString('es-ES', {minimumFractionDigits: 2}) + ' €';
                 }
 
-                const familiaNombre = data?.families.find(f => f.id === art.Familia)?.nombre || art.Familia;
+                // CORRECCIÓN: Mantener valores en español (P/U) tal cual vienen de la BD
+                const uniMedDisplay = art.UniMed || ''; 
 
-                if (showPvp) {
-                    return [art.Referencia, art.Descripción, familiaNombre, precioStr];
-                } else {
-                    return [art.Referencia, art.Descripción, familiaNombre];
-                }
+                return [
+                    art.Sección,     // Mostrador
+                    art.Familia,     // Familia (Código)
+                    art.Referencia,  // Código Artículo
+                    uniMedDisplay,   // Columna Tipo (P/U)
+                    art.Descripción, // Artículo
+                    showPvp ? precioStr : ''
+                ];
             })
-            .sort((a, b) => a[2].localeCompare(b[2]) || a[1].localeCompare(b[1]));
+            // Ordenar por Sección, luego Familia, luego Descripción
+            .sort((a, b) => {
+                const secA = parseInt(a[0]) || 99; const secB = parseInt(b[0]) || 99;
+                if (secA !== secB) return secA - secB;
+                const famA = parseInt(a[1]) || 99; const famB = parseInt(b[1]) || 99;
+                if (famA !== famB) return famA - famB;
+                return a[4].localeCompare(b[4]);
+            });
 
         if (rows.length === 0) {
             alert("⚠️ No hay artículos con precio asignado para esta tienda.");
             return;
         }
 
+        // TÍTULO PERSONALIZADO ESTILO IMAGEN 5
+        doc.setFontSize(14);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(150, 75, 0); // Color marrón/naranja aprox "Imagen 5"
+        doc.text(`CARNICERÍA MEDINA  ###  ${companyName.toUpperCase()}`, 105, 15, { align: 'center' });
+        
+        doc.setFontSize(10);
+        doc.setTextColor(0);
+        doc.text(`Fecha Revisión: ${fechaRev}`, 195, 15, { align: 'right' });
+
+        // TABLA ESTILO GRID (Bordes negros completos)
         autoTable(doc, {
-            startY: 42,
+            startY: 20,
             head: headers,
             body: rows,
-            theme: 'striped',
-            headStyles: { 
-                fillColor: [headerRgb[0], headerRgb[1], headerRgb[2]], 
-                textColor: 255,
-                fontStyle: 'bold'
+            theme: 'grid', // IMPORTANTE: Grid dibuja todos los bordes
+            styles: {
+                fontSize: 9,
+                cellPadding: 1,
+                lineColor: [0, 0, 0], // Bordes negros
+                lineWidth: 0.1,
+                textColor: [0, 0, 0],
+                valign: 'middle'
             },
-            styles: { fontSize: 9, cellPadding: 1.5 },
-            columnStyles: showPvp ? {
-                0: { cellWidth: 20, fontStyle: 'bold' },
-                1: { cellWidth: 'auto' },
-                2: { cellWidth: 40 },
-                3: { cellWidth: 25, halign: 'right', fontStyle: 'bold' }
-            } : {
-                0: { cellWidth: 20, fontStyle: 'bold' },
-                1: { cellWidth: 'auto' },
-                2: { cellWidth: 50 }
+            headStyles: {
+                fillColor: [255, 228, 196], // Beige/Crema suave
+                textColor: [100, 50, 0], // Marrón oscuro
+                fontStyle: 'bold',
+                halign: 'center',
+                lineWidth: 0.2, 
+                lineColor: [0, 0, 0]
+            },
+            columnStyles: {
+                0: { cellWidth: 20, halign: 'center' }, // Mostrador
+                1: { cellWidth: 15, halign: 'center' }, // Familia
+                2: { cellWidth: 20, halign: 'center', fontStyle: 'bold' }, // Código
+                3: { cellWidth: 15, halign: 'center', fontStyle: 'bold' }, // Tipo (P/U)
+                4: { cellWidth: 'auto' }, // Artículo
+                5: { cellWidth: 20, halign: 'right', fontStyle: 'bold' }  // PVP
             },
             didDrawPage: function (data) {
+                // Footer estilo carnicería
                 const pageCount = doc.getNumberOfPages();
                 doc.setFontSize(8);
-                doc.setTextColor(150);
-                doc.text(`Página ${pageCount}`, 196, 290, { align: 'right' });
+                doc.setTextColor(150, 75, 0);
+                doc.text(`Carnicería ACA // Página ${pageCount}`, 195, 290, { align: 'right' });
             }
         });
 
@@ -378,6 +399,7 @@ const SupervisorDashboard: React.FC = () => {
                         </div>
                         <button onClick={() => setView('menu')} className="text-gray-400 hover:text-gray-600 transition-colors"><CloseIcon className="w-6 h-6"/></button>
                     </div>
+                    {/* MENÚ PERMANECE IGUAL, SOLO CAMBIA LA LÓGICA DE GENERACIÓN ARRIBA */}
                     <div className="p-8 space-y-8 overflow-y-auto">
                         <section className="space-y-4">
                             <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b pb-2">Selección de Tienda</h3>

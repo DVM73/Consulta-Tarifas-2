@@ -132,6 +132,7 @@ interface ViewProps {
 }
 
 export const UsersList: React.FC<{ users: User[] } & ViewProps> = ({ users, onUpdate }) => {
+    // ... [UsersList implementation remains the same] ...
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [editingUser, setEditingUser] = useState<User | null>(null);
     const [posList, setPosList] = useState<PointOfSale[]>([]);
@@ -309,8 +310,14 @@ export const UsersList: React.FC<{ users: User[] } & ViewProps> = ({ users, onUp
         </>
     );
 };
+// ... [POSList, GroupsList, FamiliesList remain the same, just keeping them for context in file structure if needed, but for the XML update I only include changed parts or if the file is small enough] ...
+// To save space and adhere to "Keep updates as minimal", I will skip repeating the identical components POSList, GroupsList, FamiliesList unless you need them.
+// Wait, the prompt implies "Full content of file". I will include the rest of AdminViews as is, but focusing on the DataUploadView and parsing logic.
 
 export const POSList: React.FC<{ pos: PointOfSale[] } & ViewProps> = ({ pos, onUpdate }) => {
+    // [Implementation identical to previous, just re-exporting]
+    // ... Copy of POSList content ...
+    // Since I must output full content, I will paste the full existing POSList implementation
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [editingPOS, setEditingPOS] = useState<PointOfSale | null>(null);
     const [deleteConfig, setDeleteConfig] = useState({ isOpen: false, id: '', name: '' });
@@ -448,6 +455,7 @@ export const POSList: React.FC<{ pos: PointOfSale[] } & ViewProps> = ({ pos, onU
         </>
     );
 };
+
 export const GroupsList: React.FC<{ groups: Group[] } & ViewProps> = ({ groups, onUpdate }) => {
     const [inputValue, setInputValue] = useState('');
     const [editingId, setEditingId] = useState<string | null>(null);
@@ -507,6 +515,7 @@ export const GroupsList: React.FC<{ groups: Group[] } & ViewProps> = ({ groups, 
         </>
     );
 };
+
 export const FamiliesList: React.FC<{ families: Family[] } & ViewProps> = ({ families, onUpdate }) => {
     const [form, setForm] = useState({ id: '', nombre: '' });
     const [editingId, setEditingId] = useState<string | null>(null);
@@ -606,8 +615,9 @@ export const FamiliesList: React.FC<{ families: Family[] } & ViewProps> = ({ fam
         </>
     );
 };
-// ... resto del código sin cambios hasta ReportsInboxView ...
-// (La función normalizeHeader y parseCSV y DataUploadView se mantienen iguales)
+
+// ===================== LOGICA CSV =====================
+
 const normalizeHeader = (h: string): string => {
     const clean = h.trim().toLowerCase().replace(/^"|"$/g, '').replace(/\./g, '');
     
@@ -618,6 +628,9 @@ const normalizeHeader = (h: string): string => {
     if (clean.includes('ult') && (clean.includes('costo') || clean.includes('coste'))) return 'Ult. Costo';
     if (clean.includes('ult') && clean.includes('pro')) return 'Ult.Pro';
     if (clean === 'iva') return 'IVA';
+    
+    // NUEVA COLUMNA: Uni.Med (P/U)
+    if (clean.includes('uni') && (clean.includes('med') || clean.includes('met') || clean.includes('unidad'))) return 'UniMed';
     
     if (clean === 'cod' || clean === 'código') return 'Cod.';
     if (clean.includes('tienda') || clean.includes('centro')) return 'Tienda';
@@ -770,6 +783,7 @@ export const DataUploadView: React.FC = () => {
     );
 };
 export const DataExportView: React.FC = () => {
+    // ... [DataExportView remains same] ...
     const handleDownload = async () => {
         try {
             const data = await getAppData();
@@ -809,6 +823,7 @@ export const DataExportView: React.FC = () => {
     );
 };
 export const ReportsInboxView: React.FC<{ reports: Report[], onUpdate: (u: Partial<AppData>) => void, onRefresh: () => void }> = ({ reports, onUpdate, onRefresh }) => {
+    // ... [ReportsInboxView remains same] ...
     const [deleteConfig, setDeleteConfig] = useState({ isOpen: false, id: '' });
 
     const handleDownload = (report: Report) => {
@@ -903,6 +918,7 @@ export const ReportsInboxView: React.FC<{ reports: Report[], onUpdate: (u: Parti
     );
 };
 export const BackupView: React.FC<{ backups: Backup[], currentData: AppData, onUpdate: (u: Partial<AppData>) => void }> = ({ backups, currentData, onUpdate }) => {
+    // ... [BackupView remains same] ...
     const [backupName, setBackupName] = useState('');
     const [restoring, setRestoring] = useState(false);
 
@@ -1009,6 +1025,7 @@ export const BackupView: React.FC<{ backups: Backup[], currentData: AppData, onU
     );
 };
 export const SettingsView: React.FC<{companyName?: string, onUpdate: (u: Partial<AppData>) => void}> = ({companyName, onUpdate}) => {
+    // ... [SettingsView remains same] ...
     const [name, setName] = useState(companyName || '');
     const [isSaving, setIsSaving] = useState(false);
 
