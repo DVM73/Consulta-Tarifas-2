@@ -188,7 +188,7 @@ const SupervisorDashboard: React.FC = () => {
         });
   };
 
-  // --- LÓGICA DE GENERACIÓN DE TARIFAS (CORREGIDA V2) ---
+  // --- LÓGICA DE GENERACIÓN DE TARIFAS (CORREGIDA V3 - Cabecera Grupo y Pie Sección) ---
   const handleGenerateTariff = () => {
       if (!tarPosId) {
           alert("⚠️ Selecciona una tienda válida.");
@@ -204,11 +204,11 @@ const SupervisorDashboard: React.FC = () => {
         const fechaRev = new Date(tarRevisionDate).toLocaleDateString('es-ES');
         const showPvp = tarShowPvp === 'Si';
 
-        // 1. OBTENER NOMBRE REAL DE TIENDA (Punto 2)
-        // Usamos el mapa, si no existe, fallback a un genérico
-        const nombreTiendaReal = REAL_SHOP_NAMES[selectedPos.zona] || `Carnicería ${selectedPos.zona}`;
+        // 1. OBTENER NOMBRE REAL DE TIENDA (Punto 1: Usar Grupo)
+        // Usamos selectedPos.grupo que contiene "Carnicería Medina", etc. Si falla, fallback al mapa o zona.
+        const nombreTiendaReal = selectedPos.grupo || REAL_SHOP_NAMES[selectedPos.zona] || `Carnicería ${selectedPos.zona}`;
 
-        // 2. DEFINIR COLUMNAS (Punto 4 y 5)
+        // 2. DEFINIR COLUMNAS
         const headers = [['Mostrador', 'Familia', 'Código', 'Uni.Med', 'Artículo']];
         if (showPvp) {
             headers[0].push('PVP');
@@ -229,7 +229,7 @@ const SupervisorDashboard: React.FC = () => {
             return;
         }
 
-        // 4. ORDENAR: 1º Sección (Mostrador), 2º Alfabético (Punto 6)
+        // 4. ORDENAR: 1º Sección (Mostrador), 2º Alfabético
         allArticles.sort((a, b) => {
             const secA = parseInt(a.Sección) || 99;
             const secB = parseInt(b.Sección) || 99;
@@ -237,7 +237,7 @@ const SupervisorDashboard: React.FC = () => {
             return a.Descripción.localeCompare(b.Descripción);
         });
 
-        // 5. AGRUPAR POR MOSTRADOR (Punto 7)
+        // 5. AGRUPAR POR MOSTRADOR
         const sections: Record<string, any[]> = {};
         allArticles.forEach(art => {
             const sec = art.Sección || 'Otros';
@@ -254,7 +254,7 @@ const SupervisorDashboard: React.FC = () => {
                 if (!isNaN(num)) precioStr = num.toLocaleString('es-ES', {minimumFractionDigits: 2}) + ' €';
             }
 
-            // Punto 4: Columna Uni.Med
+            // Columna Uni.Med
             const uniMed = (art as any)['UniMed'] || (art as any)['Uni.Med'] || art.UniMed || '';
 
             const row = [
@@ -277,7 +277,7 @@ const SupervisorDashboard: React.FC = () => {
         for (const secKey of sortedSectionKeys) {
             const rows = sections[secKey];
             
-            // Punto 7: Cortar página entre mostradores
+            // Cortar página entre mostradores
             if (!isFirstTable) {
                 doc.addPage();
             }
@@ -316,9 +316,9 @@ const SupervisorDashboard: React.FC = () => {
                     4: { cellWidth: 'auto' }, // Artículo
                     5: { cellWidth: 20, halign: 'right', fontStyle: 'bold' } // PVP
                 },
-                // DIBUJAR CABECERAS (Punto 1 y 2)
+                // DIBUJAR CABECERAS (Punto 1 corregido: usar nombreTiendaReal que es el Grupo)
                 didDrawPage: (data) => {
-                    // Línea 1: NOMBRE TIENDA ### EMPRESA
+                    // Línea 1: GRUPO (Nombre real) ### EMPRESA
                     doc.setFontSize(14);
                     doc.setFont('helvetica', 'bold');
                     doc.setTextColor(150, 75, 0); // Color marrón
@@ -326,7 +326,7 @@ const SupervisorDashboard: React.FC = () => {
                     const headerText = `${nombreTiendaReal.toUpperCase()} ### ${companyName.toUpperCase()}`;
                     doc.text(headerText, 105, 15, { align: 'center' });
                     
-                    // Línea 2: Fecha Revisión (En línea separada)
+                    // Línea 2: Fecha Revisión
                     doc.setFontSize(10);
                     doc.setTextColor(0);
                     doc.setFont('helvetica', 'normal');
@@ -334,11 +334,18 @@ const SupervisorDashboard: React.FC = () => {
                 }
             });
 
-            // LÓGICA DE PIE DE PÁGINA (Punto 3 y 7)
-            // Calculamos el total de páginas SOLO de esta sección (Mostrador)
+            // LÓGICA DE PIE DE PÁGINA (Punto 2 corregido: Etiqueta dinámica por sección)
             const endPage = doc.getNumberOfPages();
             const totalPagesInSection = endPage - startPage + 1;
             
+            // Determinar etiqueta según sección (Mostrador)
+            let sectionLabel = 'Carnicería';
+            if (secKey === '2') {
+                sectionLabel = 'Charcutería';
+            } else if (secKey !== '1') {
+                sectionLabel = 'Tienda'; // Fallback por si acaso
+            }
+
             // Escribimos el pie de página solo en las páginas generadas para este mostrador
             for (let i = startPage; i <= endPage; i++) {
                 doc.setPage(i);
@@ -348,8 +355,8 @@ const SupervisorDashboard: React.FC = () => {
                 doc.setFontSize(8);
                 doc.setTextColor(0); // Negro
                 
-                // Izquierda: "Carnicería // [ZONA]"
-                doc.text(`Carnicería // ${selectedPos.zona}`, 14, footerY);
+                // Izquierda: "Carnicería // [ZONA]" o "Charcutería // [ZONA]"
+                doc.text(`${sectionLabel} // ${selectedPos.zona}`, 14, footerY);
                 
                 // Derecha: "Página X de Y" (Relativo al mostrador)
                 doc.text(`Página ${currentPageInSection} de ${totalPagesInSection}`, 196, footerY, { align: 'right' });
