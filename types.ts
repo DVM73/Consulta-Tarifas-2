@@ -29,6 +29,7 @@ export type AdminView =
   | 'families'
   | 'upload'
   | 'export'
+  | 'import'
   | 'backup'
   | 'settings'
   | 'password'
