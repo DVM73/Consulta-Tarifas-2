@@ -18,42 +18,67 @@ import { getAppData, saveAllData, overwriteAllData } from '../services/dataServi
 
 // --- VISTAS DE SOLO LECTURA PARA SUPERVISOR ---
 
-export const ReadOnlyUsersList: React.FC<{ users: User[], posList: PointOfSale[] }> = ({ users, posList }) => (
-    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 overflow-hidden animate-fade-in max-h-[80vh] flex flex-col">
-        <div className="p-6 border-b dark:border-slate-700 shrink-0">
-            <h2 className="text-lg font-bold text-slate-800 dark:text-white uppercase tracking-tight">Usuarios</h2>
+export const ReadOnlyUsersList: React.FC<{ users: User[], posList: PointOfSale[] }> = ({ users, posList }) => {
+    // Ordenamiento Numérico Estricto por Cód. Tienda (Idéntico al panel de Admin)
+    const sortedUsers = useMemo(() => {
+        const sorted = [...users];
+        return sorted.sort((a, b) => {
+            // Buscamos la tienda asociada a la zona de cada usuario
+            const posA = posList.find(p => p.zona.toUpperCase() === a.zona.toUpperCase());
+            const posB = posList.find(p => p.zona.toUpperCase() === b.zona.toUpperCase());
+            
+            // Extraemos el código numérico. Si no tiene tienda (ej. Admin), usamos 99999 para que vaya al final.
+            const codeA = posA && posA.código ? parseInt(posA.código, 10) : 99999;
+            const codeB = posB && posB.código ? parseInt(posB.código, 10) : 99999;
+
+            // Si los códigos son iguales (ej: dos empleados en la misma tienda o dos admins)
+            if (codeA === codeB) {
+                // Ordenar alfabéticamente por nombre
+                return a.nombre.localeCompare(b.nombre);
+            }
+
+            // Orden ascendente por código de tienda (1, 2, 7, 10...)
+            return codeA - codeB;
+        });
+    }, [users, posList]);
+
+    return (
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 overflow-hidden animate-fade-in max-h-[80vh] flex flex-col">
+            <div className="p-6 border-b dark:border-slate-700 shrink-0">
+                <h2 className="text-lg font-bold text-slate-800 dark:text-white uppercase tracking-tight">Usuarios</h2>
+            </div>
+            <div className="overflow-auto custom-scrollbar">
+                <table className="w-full text-left text-sm border-separate border-spacing-0">
+                    <thead className="sticky top-0 z-20 shadow-sm">
+                        <tr>
+                            <th className="p-4 bg-gray-50 dark:bg-slate-900 border-b dark:border-slate-700 text-slate-500 font-bold uppercase text-[10px]">Cód. Tienda</th>
+                            <th className="p-4 bg-gray-50 dark:bg-slate-900 border-b dark:border-slate-700 text-slate-500 font-bold uppercase text-[10px]">Zona</th>
+                            <th className="p-4 bg-gray-50 dark:bg-slate-900 border-b dark:border-slate-700 text-slate-500 font-bold uppercase text-[10px]">Nombre</th>
+                            <th className="p-4 bg-gray-50 dark:bg-slate-900 border-b dark:border-slate-700 text-slate-500 font-bold uppercase text-[10px]">Departamento</th>
+                            <th className="p-4 bg-gray-50 dark:bg-slate-900 border-b dark:border-slate-700 text-slate-500 font-bold uppercase text-[10px]">Grupo</th>
+                            <th className="p-4 bg-gray-50 dark:bg-slate-900 border-b dark:border-slate-700 text-slate-500 font-bold uppercase text-[10px]">Ver PVP</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y dark:divide-slate-700">
+                        {sortedUsers.map(u => {
+                            const uPos = posList.find(p => p.zona === u.zona);
+                            return (
+                                <tr key={u.id} className="hover:bg-gray-50/50 dark:hover:bg-slate-900/50 transition-colors">
+                                    <td className="p-4 font-bold">{uPos?.código || '--'}</td>
+                                    <td className="p-4 font-medium">{u.zona}</td>
+                                    <td className="p-4 font-bold text-slate-800 dark:text-slate-200">{u.nombre}</td>
+                                    <td className="p-4 text-slate-500">{u.departamento}</td>
+                                    <td className="p-4 text-slate-500">{u.grupo}</td>
+                                    <td className="p-4 font-bold">{u.verPVP ? 'Sí' : 'No'}</td>
+                                </tr>
+                            );
+                        })}
+                    </tbody>
+                </table>
+            </div>
         </div>
-        <div className="overflow-auto custom-scrollbar">
-            <table className="w-full text-left text-sm border-separate border-spacing-0">
-                <thead className="sticky top-0 z-20 shadow-sm">
-                    <tr>
-                        <th className="p-4 bg-gray-50 dark:bg-slate-900 border-b dark:border-slate-700 text-slate-500 font-bold uppercase text-[10px]">Cód. Tienda</th>
-                        <th className="p-4 bg-gray-50 dark:bg-slate-900 border-b dark:border-slate-700 text-slate-500 font-bold uppercase text-[10px]">Zona</th>
-                        <th className="p-4 bg-gray-50 dark:bg-slate-900 border-b dark:border-slate-700 text-slate-500 font-bold uppercase text-[10px]">Nombre</th>
-                        <th className="p-4 bg-gray-50 dark:bg-slate-900 border-b dark:border-slate-700 text-slate-500 font-bold uppercase text-[10px]">Departamento</th>
-                        <th className="p-4 bg-gray-50 dark:bg-slate-900 border-b dark:border-slate-700 text-slate-500 font-bold uppercase text-[10px]">Grupo</th>
-                        <th className="p-4 bg-gray-50 dark:bg-slate-900 border-b dark:border-slate-700 text-slate-500 font-bold uppercase text-[10px]">Ver PVP</th>
-                    </tr>
-                </thead>
-                <tbody className="divide-y dark:divide-slate-700">
-                    {users.map(u => {
-                        const uPos = posList.find(p => p.zona === u.zona);
-                        return (
-                            <tr key={u.id} className="hover:bg-gray-50/50 dark:hover:bg-slate-900/50 transition-colors">
-                                <td className="p-4 font-bold">{uPos?.código || '--'}</td>
-                                <td className="p-4 font-medium">{u.zona}</td>
-                                <td className="p-4 font-bold text-slate-800 dark:text-slate-200">{u.nombre}</td>
-                                <td className="p-4 text-slate-500">{u.departamento}</td>
-                                <td className="p-4 text-slate-500">{u.grupo}</td>
-                                <td className="p-4 font-bold">{u.verPVP ? 'Sí' : 'No'}</td>
-                            </tr>
-                        );
-                    })}
-                </tbody>
-            </table>
-        </div>
-    </div>
-);
+    );
+};
 
 export const ReadOnlyPOSList: React.FC<{ pos: PointOfSale[] }> = ({ pos }) => (
     <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 overflow-hidden animate-fade-in max-h-[80vh] flex flex-col">

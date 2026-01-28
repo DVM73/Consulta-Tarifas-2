@@ -9,12 +9,15 @@ const getAiClient = (): GoogleGenAI | null => {
     // Si ya existe, devolverlo
     if (aiClient) return aiClient;
     
-    // Obtener clave directamente del proceso (según reglas estrictas)
+    // Obtener clave directamente del proceso
     const apiKey = process.env.API_KEY;
     
     if (!apiKey) {
         console.warn("⚠️ API Key de Google GenAI no detectada en environment.");
         return null;
+    } else {
+        // Debug seguro (solo para verificar que no está vacía)
+        console.log("🔑 API Key detectada (Longitud: " + apiKey.length + ")");
     }
     
     try {
@@ -95,13 +98,14 @@ export async function getBotResponse(message: string): Promise<string> {
   } catch (error: any) {
     console.error("Error al comunicarse con la API de Gemini:", error);
     
-    // Si hay error, invalidamos la sesión para forzar reconexión en el siguiente mensaje
+    // IMPORTANTE: Si hay error, invalidamos la sesión para forzar reconexión total en el siguiente mensaje
     chatSession = null;
+    aiClient = null;
 
     if (error.message && (error.message.includes('API key') || error.message.includes('403'))) {
         return "Error de autenticación con la IA. Verifica que la API Key está configurada correctamente en el archivo .env";
     }
     
-    return "Lo siento, ha ocurrido un error de conexión con la IA. Por favor, inténtalo de nuevo en unos segundos.";
+    return "Lo siento, ha ocurrido un error de conexión con la IA. He reiniciado mi memoria, por favor inténtalo de nuevo.";
   }
 }
