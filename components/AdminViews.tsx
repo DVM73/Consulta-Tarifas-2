@@ -132,7 +132,6 @@ interface ViewProps {
     onUpdate: (newData: Partial<AppData>) => void;
 }
 
-// CORRECCIÓN: Ahora aceptamos posList como prop obligatoria para garantizar el ordenamiento
 export const UsersList: React.FC<{ users: User[], posList: PointOfSale[] } & ViewProps> = ({ users, posList, onUpdate }) => {
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [editingUser, setEditingUser] = useState<User | null>(null);
@@ -149,26 +148,14 @@ export const UsersList: React.FC<{ users: User[], posList: PointOfSale[] } & Vie
         verPVP: false 
     });
 
-    // Ordenamiento Numérico Estricto por Cód. Tienda
     const sortedUsers = useMemo(() => {
         const sorted = [...users];
         return sorted.sort((a, b) => {
-            // Buscamos la tienda asociada a la zona de cada usuario
-            // Usamos uppercase para evitar errores de mayúsculas/minúsculas
             const posA = posList.find(p => p.zona.toUpperCase() === a.zona.toUpperCase());
             const posB = posList.find(p => p.zona.toUpperCase() === b.zona.toUpperCase());
-            
-            // Extraemos el código numérico. Si no tiene tienda (ej. Admin), usamos 99999 para que vaya al final.
             const codeA = posA && posA.código ? parseInt(posA.código, 10) : 99999;
             const codeB = posB && posB.código ? parseInt(posB.código, 10) : 99999;
-
-            // Si los códigos son iguales (ej: dos empleados en la misma tienda o dos admins)
-            if (codeA === codeB) {
-                // Ordenar alfabéticamente por nombre
-                return a.nombre.localeCompare(b.nombre);
-            }
-
-            // Orden ascendente por código de tienda (1, 2, 7, 10...)
+            if (codeA === codeB) return a.nombre.localeCompare(b.nombre);
             return codeA - codeB;
         });
     }, [users, posList]);
@@ -768,7 +755,9 @@ export const DataUploadView: React.FC = () => {
     );
 };
 
-export const DataExportView: React.FC = () => {
+// Componente Unificado de Gestión de Datos (Exportación e Importación)
+export const DataManagementView: React.FC = () => {
+    // --- LÓGICA DE EXPORTACIÓN ---
     const handleExport = async () => {
         const data = await getAppData();
         const json = JSON.stringify(data, null, 2);
@@ -782,21 +771,7 @@ export const DataExportView: React.FC = () => {
         document.body.removeChild(link);
     };
 
-    return (
-        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 p-10 animate-fade-in max-w-lg mx-auto text-center">
-            <div className="w-20 h-20 bg-indigo-50 dark:bg-indigo-900/20 rounded-full flex items-center justify-center text-indigo-600 mb-6 mx-auto">
-                <ExportIcon className="w-10 h-10" />
-            </div>
-            <h2 className="text-xl font-bold text-slate-800 dark:text-white mb-2 uppercase tracking-tight">Exportar Base de Datos</h2>
-            <p className="text-slate-500 mb-8">Descarga una copia completa de todos los datos en formato JSON.</p>
-            <button onClick={handleExport} className="w-full bg-brand-600 text-white font-bold py-4 rounded-xl shadow-lg shadow-brand-600/20 hover:bg-brand-700 transition-all uppercase text-xs tracking-widest flex items-center justify-center gap-3">
-                <ExportIcon className="w-5 h-5"/> Descargar Copia JSON
-            </button>
-        </div>
-    );
-};
-
-export const DataImportView: React.FC = () => {
+    // --- LÓGICA DE IMPORTACIÓN ---
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [loading, setLoading] = useState(false);
 
@@ -829,27 +804,42 @@ export const DataImportView: React.FC = () => {
     };
 
     return (
-        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 p-10 animate-fade-in max-w-lg mx-auto text-center">
-            <div className="w-20 h-20 bg-green-50 dark:bg-green-900/20 rounded-full flex items-center justify-center text-green-600 mb-6 mx-auto">
-                <ArrowDownIcon className="w-10 h-10" />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 animate-fade-in">
+            {/* SECCIÓN DE EXPORTACIÓN */}
+            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 p-10 text-center flex flex-col justify-center h-full">
+                <div className="w-20 h-20 bg-indigo-50 dark:bg-indigo-900/20 rounded-full flex items-center justify-center text-indigo-600 mb-6 mx-auto">
+                    <ExportIcon className="w-10 h-10" />
+                </div>
+                <h2 className="text-xl font-bold text-slate-800 dark:text-white mb-2 uppercase tracking-tight">Exportar Base de Datos</h2>
+                <p className="text-slate-500 mb-8">Descarga una copia completa de todos los datos en formato JSON para seguridad o migración.</p>
+                <button onClick={handleExport} className="w-full bg-brand-600 text-white font-bold py-4 rounded-xl shadow-lg shadow-brand-600/20 hover:bg-brand-700 transition-all uppercase text-xs tracking-widest flex items-center justify-center gap-3">
+                    <ExportIcon className="w-5 h-5"/> Descargar Copia JSON
+                </button>
             </div>
-            <h2 className="text-xl font-bold text-slate-800 dark:text-white mb-2 uppercase tracking-tight">Importar Base de Datos</h2>
-            <p className="text-slate-500 mb-8">Restaura una copia de seguridad completa desde un archivo JSON.</p>
-            
-            <input 
-                type="file" 
-                accept=".json" 
-                ref={fileInputRef}
-                onChange={handleFile}
-                className="hidden" 
-                id="file-restore"
-            />
-            <label 
-                htmlFor="file-restore" 
-                className={`w-full bg-brand-600 text-white font-bold py-4 rounded-xl shadow-lg shadow-brand-600/20 hover:bg-brand-700 transition-all uppercase text-xs tracking-widest flex items-center justify-center gap-3 cursor-pointer ${loading ? 'opacity-50 pointer-events-none' : ''}`}
-            >
-                <UploadIcon className="w-5 h-5"/> {loading ? 'Restaurando...' : 'Seleccionar Archivo JSON'}
-            </label>
+
+            {/* SECCIÓN DE IMPORTACIÓN */}
+            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 p-10 text-center flex flex-col justify-center h-full">
+                <div className="w-20 h-20 bg-green-50 dark:bg-green-900/20 rounded-full flex items-center justify-center text-green-600 mb-6 mx-auto">
+                    <ArrowDownIcon className="w-10 h-10" />
+                </div>
+                <h2 className="text-xl font-bold text-slate-800 dark:text-white mb-2 uppercase tracking-tight">Importar Base de Datos</h2>
+                <p className="text-slate-500 mb-8">Restaura el sistema completo cargando un archivo JSON previamente exportado.</p>
+                
+                <input 
+                    type="file" 
+                    accept=".json" 
+                    ref={fileInputRef}
+                    onChange={handleFile}
+                    className="hidden" 
+                    id="file-restore"
+                />
+                <label 
+                    htmlFor="file-restore" 
+                    className={`w-full bg-brand-600 text-white font-bold py-4 rounded-xl shadow-lg shadow-brand-600/20 hover:bg-brand-700 transition-all uppercase text-xs tracking-widest flex items-center justify-center gap-3 cursor-pointer ${loading ? 'opacity-50 pointer-events-none' : ''}`}
+                >
+                    <UploadIcon className="w-5 h-5"/> {loading ? 'Restaurando...' : 'Seleccionar Archivo JSON'}
+                </label>
+            </div>
         </div>
     );
 };
