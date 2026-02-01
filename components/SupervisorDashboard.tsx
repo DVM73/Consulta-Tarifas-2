@@ -61,14 +61,12 @@ const SupervisorDashboard: React.FC = () => {
           
           // Lógica de Notificación de Actualización (ROBUSTA)
           if (appData.lastUpdated) {
-             // Saneamos la fecha para usarla como clave (quitamos espacios y caracteres raros)
              const cleanDate = appData.lastUpdated.replace(/[^a-zA-Z0-9]/g, '');
              const storageKey = `supervisor_update_ack_${cleanDate}`;
              const hasSeenThisUpdate = localStorage.getItem(storageKey);
              
              if (!hasSeenThisUpdate) {
-                 // Pequeño retardo para asegurar una renderización suave
-                 setTimeout(() => setShowUpdateModal(true), 500);
+                 setTimeout(() => setShowUpdateModal(true), 1000);
              }
           }
           

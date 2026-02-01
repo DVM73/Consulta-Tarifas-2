@@ -1,8 +1,14 @@
 
 import { GoogleGenAI, Chat, GenerateContentResponse } from "@google/genai";
 
+// DIAGNÓSTICO DE INICIO
+if (!process.env.API_KEY) {
+    console.error("❌ ERROR CRÍTICO: No se ha detectado la API_KEY en el entorno.");
+} else {
+    console.log("🔑 Estado API Key: Detectada (Longitud: " + process.env.API_KEY.length + ")");
+}
+
 // Inicialización estricta según las directrices de la plataforma.
-// Asumimos que process.env.API_KEY está disponible y es válida.
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 let chatSession: Chat | null = null;
@@ -68,7 +74,7 @@ export async function getBotResponse(message: string): Promise<string> {
         chatSession = null;
 
         if (error.message && error.message.includes('API key')) {
-            return "Error de configuración: La API Key no es válida o no se ha encontrado.";
+            return "Error de configuración: La API Key no es válida o no se ha encontrado. Revisa la consola.";
         }
         
         return "Ha ocurrido un error al procesar tu solicitud. Inténtalo de nuevo en unos segundos.";

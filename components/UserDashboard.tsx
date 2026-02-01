@@ -368,7 +368,6 @@ const UserDashboard: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
             </main>
 
             {isExportModalOpen && (
-                // SOLUCIÓN DEFINITIVA: Estilo en línea para z-index para ignorar cualquier conflicto de compilación CSS
                 <div 
                     className="fixed inset-0 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in"
                     style={{ zIndex: 99999 }}
